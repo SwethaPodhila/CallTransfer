@@ -1,14 +1,11 @@
 const express = require("express");
-const twilio = require("twilio");
+const twilio = require('twilio');
 require("dotenv").config();
 
 const app = express();
 app.use(express.json());
 
-const client = twilio(
-  process.env.TWILIO_ACCOUNT_SID,
-  process.env.TWILIO_AUTH_TOKEN
-);
+const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 
 // Health check
 app.get("/", (req, res) => {
@@ -19,24 +16,20 @@ app.post("/transfer", async (req, res) => {
   try {
     const { callSid } = req.body;
 
-    if (!callSid) {
-      return res.status(400).send({ error: "callSid missing" });
-    }
+    if (!callSid) return res.status(400).send({ error: "callSid missing" });
 
     // 1️⃣ Create conference
     const conference = await client.conferences.create({
-      friendlyName: `millis-support-${Date.now()}`
+      friendlyName: `support-${Date.now()}`,
+      status: "in-progress"  // important in latest SDK
     });
 
-    // 2️⃣ Add USER (existing call)
+    // 2️⃣ Add the existing caller
     await client.conferences(conference.sid)
       .participants
-      .create({
-        callSid: callSid,
-        endConferenceOnExit: true
-      });
+      .create({ callSid, endConferenceOnExit: true });
 
-    // 3️⃣ Add AGENT
+    // 3️⃣ Add agent
     await client.conferences(conference.sid)
       .participants
       .create({
@@ -45,12 +38,7 @@ app.post("/transfer", async (req, res) => {
         earlyMedia: true
       });
 
-    console.log("Conference started:", conference.sid);
-
-    res.send({
-      status: "connected",
-      conferenceSid: conference.sid
-    });
+    res.send({ status: "connected", conferenceSid: conference.sid });
 
   } catch (err) {
     console.error("Transfer error:", err);

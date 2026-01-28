@@ -19,6 +19,7 @@ app.get("/", (req, res) => {
 app.post("/transfer", async (req, res) => {
   try {
     const { callSid } = req.body;
+    console.log("Received callSid:", callSid);
     if (!callSid) {
       return res.status(400).json({ error: "callSid missing" });
     }

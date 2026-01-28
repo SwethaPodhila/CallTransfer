@@ -1,5 +1,5 @@
 const express = require("express");
-const twilio = require('twilio');
+const twilio = require("twilio");
 require("dotenv").config();
 
 const app = express();
@@ -15,22 +15,21 @@ app.get("/", (req, res) => {
 app.post("/transfer", async (req, res) => {
   try {
     const { callSid } = req.body;
-
     if (!callSid) return res.status(400).send({ error: "callSid missing" });
 
-    // 1️⃣ Create conference
-    const conference = await client.conferences.create({
+    // 1️⃣ Create conference using v1 API
+    const conference = await client.conferences.v1.conferences.create({
       friendlyName: `support-${Date.now()}`,
-      status: "in-progress"  // important in latest SDK
+      status: "in-progress" // required for active conference
     });
 
-    // 2️⃣ Add the existing caller
-    await client.conferences(conference.sid)
+    // 2️⃣ Add existing caller
+    await client.conferences.v1.conferences(conference.sid)
       .participants
       .create({ callSid, endConferenceOnExit: true });
 
     // 3️⃣ Add agent
-    await client.conferences(conference.sid)
+    await client.conferences.v1.conferences(conference.sid)
       .participants
       .create({
         from: process.env.TWILIO_NUMBER,
@@ -39,7 +38,6 @@ app.post("/transfer", async (req, res) => {
       });
 
     res.send({ status: "connected", conferenceSid: conference.sid });
-
   } catch (err) {
     console.error("Transfer error:", err);
     res.status(500).send({ error: "Transfer failed" });

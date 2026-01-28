@@ -5,9 +5,9 @@ require("dotenv").config();
 const app = express();
 app.use(express.json());
 
+// Initialize Twilio client correctly
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
 
-// Health check
 app.get("/", (req, res) => {
   res.send("Twilio conference server running");
 });
@@ -17,19 +17,21 @@ app.post("/transfer", async (req, res) => {
     const { callSid } = req.body;
     if (!callSid) return res.status(400).send({ error: "callSid missing" });
 
-    // 1️⃣ Create conference using v1 API
-    const conference = await client.conferences.v1.conferences.create({
+    // ✅ Create a conference (modern Twilio SDK)
+    const conference = await client.conferences.create({
       friendlyName: `support-${Date.now()}`,
-      status: "in-progress" // required for active conference
     });
 
-    // 2️⃣ Add existing caller
-    await client.conferences.v1.conferences(conference.sid)
+    // ✅ Add existing caller
+    await client.conferences(conference.sid)
       .participants
-      .create({ callSid, endConferenceOnExit: true });
+      .create({
+        callSid,
+        endConferenceOnExit: true
+      });
 
-    // 3️⃣ Add agent
-    await client.conferences.v1.conferences(conference.sid)
+    // ✅ Add agent
+    await client.conferences(conference.sid)
       .participants
       .create({
         from: process.env.TWILIO_NUMBER,
@@ -45,6 +47,5 @@ app.post("/transfer", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+ch

@@ -36,7 +36,7 @@ app.post("/transfer", async (req, res) => {
         endConferenceOnExit: true
       });
 
-    // 3️⃣ Call YOU (agent)
+    // 3️⃣ Add AGENT
     await client.conferences(conference.sid)
       .participants
       .create({
